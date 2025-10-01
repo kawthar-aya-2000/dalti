@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "149609900190",
+    "project_id": "dalti-6ee80",
+    "storage_bucket": "dalti-6ee80.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:149609900190:android:d0b86f90512337692df38f",
+        "android_client_info": {
+          "package_name": "com.example.dalti"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "149609900190-2kb5k8s503a11d0gku6m199m5flinsbv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dalti",
+            "certificate_hash": "196a9681c12ee49bdcc89594113ed2f833c9879d"
+          }
+        },
+        {
+          "client_id": "149609900190-iisvmkj7bpjoqmhstfk63o69dghfaij1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYZbosXSXP8_sVw9vqSrR7wvDavGxdYXk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "149609900190-iisvmkj7bpjoqmhstfk63o69dghfaij1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
