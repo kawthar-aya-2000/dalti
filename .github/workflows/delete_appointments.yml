@@ -1,0 +1,31 @@
+name: Delete Old Appointments
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # كل يوم على الساعة 00:00 UTC
+  workflow_dispatch:  # لتشغيل يدوي إذا حبيتي
+
+jobs:
+  delete_appointments:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          cd functions
+          npm install
+
+      - name: Run delete appointments script
+        run: |
+          cd functions
+          node index.js
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
