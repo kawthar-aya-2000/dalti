@@ -191,7 +191,7 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 }*/
-
+ // 2
 
 /*import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -387,8 +387,8 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 }*/
-
-import 'package:flutter/material.dart';
+//3
+/*import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'booking_confirmation_page.dart';
@@ -574,5 +574,213 @@ class _BookingPageState extends State<BookingPage> {
       ),
     );
   }
+}*/
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'booking_confirmation_page.dart';
+
+class BookingPage extends StatefulWidget {
+  final String clinicId;
+  final String clinicName;
+  final String doctorName;
+
+  const BookingPage({
+    super.key,
+    required this.clinicId,
+    required this.clinicName,
+    required this.doctorName,
+  });
+
+  @override
+  State<BookingPage> createState() => _BookingPageState();
 }
 
+class _BookingPageState extends State<BookingPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
+  final appointmentsRef = FirebaseFirestore.instance.collection('appointments');
+  final clinicsRef = FirebaseFirestore.instance.collection('clinics');
+
+  /// نتأكد أن حقل queue موجود
+  Future<void> ensureQueueField() async {
+    final clinicRef = clinicsRef.doc(widget.clinicId);
+    final snapshot = await clinicRef.get();
+
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data();
+    if (data != null && (data['booking'] == null || !(data['booking'] as Map).containsKey('queue'))) {
+      await clinicRef.update({
+        'booking.queue': {'currentNumber': 0},
+      });
+    }
+  }
+
+  /// نجيب رقم الدور الجديد باستخدام Transaction
+  Future<int> getNextQueueNumber() async {
+    final clinicRef = clinicsRef.doc(widget.clinicId);
+
+    return FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(clinicRef);
+      final currentNumber = snapshot.get('booking.queue.currentNumber') as int? ?? 0;
+      final nextNumber = currentNumber + 1;
+
+      transaction.update(clinicRef, {
+        'booking.queue.currentNumber': nextNumber,
+      });
+
+      return nextNumber;
+    });
+  }
+
+  Future<void> _bookAppointment() async {
+    if (_formKey.currentState!.validate()) {
+      final patientName = _nameController.text.trim();
+      final patientLastName = _lastNameController.text.trim();
+      final patientPhone = _phoneController.text.trim();
+      final patientId = FirebaseAuth.instance.currentUser!.uid;
+
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      // هل عندو حجز اليوم؟
+      final existingAppointments = await appointmentsRef
+          .where('patientId', isEqualTo: patientId)
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      if (existingAppointments.docs.isNotEmpty) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("تنبيه"),
+            content: const Text("لا يمكنك حجز أكثر من موعد واحد في نفس اليوم."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("موافق"),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // تأكد حقل queue
+      await ensureQueueField();
+      final queueNumber = await getNextQueueNumber();
+
+      // إضافة الحجز
+      await appointmentsRef.add({
+        'clinicId': widget.clinicId,
+        'clinicName': widget.clinicName,
+        'doctorName': widget.doctorName,
+        'patientId': patientId,
+        'patientName': patientName,
+        'patientLastName': patientLastName,
+        'patientPhone': patientPhone,
+        'createdAt': Timestamp.fromDate(now),
+        'status': 'pending',
+        'queueNumber': queueNumber,
+      });
+
+      // الانتقال لصفحة تأكيد الحجز
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BookingConfirmationPage(
+            clinicName: widget.clinicName,
+            doctorName: widget.doctorName,
+            patientName: "$patientName $patientLastName",
+            queueNumber: queueNumber,
+            clinicId: widget.clinicId,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("حجز موعد"),
+          backgroundColor: Colors.teal,
+          centerTitle: true,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                Text(widget.clinicName,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text("الطبيب: ${widget.doctorName}",
+                    style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 20),
+
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: "الاسم",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? "أدخل اسمك" : null,
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _lastNameController,
+                  decoration: InputDecoration(
+                    labelText: "اللقب",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? "أدخل لقبك" : null,
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: InputDecoration(
+                    labelText: "رقم الهاتف",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) =>
+                      value == null || value.isEmpty ? "أدخل رقم هاتفك" : null,
+                ),
+                const SizedBox(height: 24),
+
+                ElevatedButton.icon(
+                  onPressed: _bookAppointment,
+                  icon: const Icon(Icons.check),
+                  label: const Text("تأكيد الحجز"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    minimumSize: const Size.fromHeight(50),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

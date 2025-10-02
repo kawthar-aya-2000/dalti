@@ -1,3 +1,4 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -42,7 +43,7 @@ class BookingConfirmationPage extends StatelessWidget {
               Text("المريض: $patientName", style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 30),
 
-              // رقم الدور
+              // رقم الدور المحجوز للمريض
               const Text(
                 "رقم دورك هو:",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -72,8 +73,11 @@ class BookingConfirmationPage extends StatelessWidget {
                   if (!snapshot.hasData) {
                     return const CircularProgressIndicator();
                   }
+
                   final clinicData = snapshot.data!;
-                  final currentNumber = clinicData['currentNumber'] ?? 0;
+                  final booking = clinicData['booking'] as Map<String, dynamic>? ?? {};
+                  final queue = booking['queue'] as Map<String, dynamic>? ?? {};
+                  final currentNumber = queue['currentNumber'] ?? 0;
 
                   return Text(
                     "الدور متوقف الآن عند الرقم: $currentNumber",
@@ -88,8 +92,8 @@ class BookingConfirmationPage extends StatelessWidget {
     );
   }
 }
+*/
 
-/*
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -111,67 +115,83 @@ class BookingConfirmationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("تأكيد الحجز"),
-          backgroundColor: Colors.teal,
-          centerTitle: true,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(clinicName,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text("الطبيب: $doctorName", style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 6),
-              Text("المريض: $patientName", style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 30),
-
-              const Text("رقم دورك هو:",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.teal.shade100,
+    return WillPopScope(
+      onWillPop: () async => false, // 🔒 ما يخليش المستخدم يرجع
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text("تأكيد الحجز"),
+            backgroundColor: Colors.teal,
+            centerTitle: true,
+            automaticallyImplyLeading: false, // 🔒 يخفي زر الرجوع
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  clinicName,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                child: Text(
-                  "$queueNumber",
-                  style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                const SizedBox(height: 6),
+                Text("الطبيب: $doctorName",
+                    style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 6),
+                Text("المريض: $patientName",
+                    style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 30),
+
+                const Text(
+                  "رقم دورك هو:",
+                  style:
+                      TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
-              ),
-              const SizedBox(height: 40),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(30),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.teal.shade100,
+                  ),
+                  child: Text(
+                    "$queueNumber",
+                    style: const TextStyle(
+                        fontSize: 40, fontWeight: FontWeight.bold),
+                  ),
+                ),
 
-              // الدور الحالي (من Firestore)
-              StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection("clinics")
-                    .doc(clinicId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const CircularProgressIndicator();
-                  }
-                  final clinicData = snapshot.data!;
-                  final currentNumber = clinicData['currentNumber'] ?? 0;
+                const SizedBox(height: 40),
 
-                  return Text(
-                    "الدور متوقف الآن عند الرقم: $currentNumber",
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                  );
-                },
-              ),
-            ],
+                // بث مباشر للدور الحالي
+                StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection("clinics")
+                      .doc(clinicId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const CircularProgressIndicator();
+                    }
+                    final clinicData =
+                        snapshot.data!.data() as Map<String, dynamic>?;
+                    final currentNumber =
+                        clinicData?['booking']?['queue']?['currentNumber'] ?? 0;
+
+                    return Text(
+                      "الدور متوقف الآن عند الرقم: $currentNumber",
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w500),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-*/ 
