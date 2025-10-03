@@ -191,7 +191,7 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 }*/
- // 2
+// 2
 
 /*import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -579,6 +579,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'booking_confirmation_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BookingPage extends StatefulWidget {
   final String clinicId;
@@ -613,7 +614,9 @@ class _BookingPageState extends State<BookingPage> {
     if (!snapshot.exists) return;
 
     final data = snapshot.data();
-    if (data != null && (data['booking'] == null || !(data['booking'] as Map).containsKey('queue'))) {
+    if (data != null &&
+        (data['booking'] == null ||
+            !(data['booking'] as Map).containsKey('queue'))) {
       await clinicRef.update({
         'booking.queue': {'currentNumber': 0},
       });
@@ -626,7 +629,8 @@ class _BookingPageState extends State<BookingPage> {
 
     return FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(clinicRef);
-      final currentNumber = snapshot.get('booking.queue.currentNumber') as int? ?? 0;
+      final currentNumber =
+          snapshot.get('booking.queue.currentNumber') as int? ?? 0;
       final nextNumber = currentNumber + 1;
 
       transaction.update(clinicRef, {
@@ -651,7 +655,10 @@ class _BookingPageState extends State<BookingPage> {
       // هل عندو حجز اليوم؟
       final existingAppointments = await appointmentsRef
           .where('patientId', isEqualTo: patientId)
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          )
           .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
           .get();
 
@@ -690,6 +697,15 @@ class _BookingPageState extends State<BookingPage> {
         'queueNumber': queueNumber,
       });
 
+      // تخزين بيانات الحجز محليا
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('hasBooking', true);
+      await prefs.setString('clinicName', widget.clinicName);
+      await prefs.setString('doctorName', widget.doctorName);
+      await prefs.setString('patientName', "$patientName $patientLastName");
+      await prefs.setInt('queueNumber', queueNumber);
+      await prefs.setString('clinicId', widget.clinicId);
+
       // الانتقال لصفحة تأكيد الحجز
       Navigator.push(
         context,
@@ -722,11 +738,18 @@ class _BookingPageState extends State<BookingPage> {
             key: _formKey,
             child: ListView(
               children: [
-                Text(widget.clinicName,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(
+                  widget.clinicName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text("الطبيب: ${widget.doctorName}",
-                    style: const TextStyle(fontSize: 16)),
+                Text(
+                  "الطبيب: ${widget.doctorName}",
+                  style: const TextStyle(fontSize: 16),
+                ),
                 const SizedBox(height: 20),
 
                 TextFormField(
@@ -734,7 +757,8 @@ class _BookingPageState extends State<BookingPage> {
                   decoration: InputDecoration(
                     labelText: "الاسم",
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) =>
                       value == null || value.isEmpty ? "أدخل اسمك" : null,
@@ -746,7 +770,8 @@ class _BookingPageState extends State<BookingPage> {
                   decoration: InputDecoration(
                     labelText: "اللقب",
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) =>
                       value == null || value.isEmpty ? "أدخل لقبك" : null,
@@ -758,7 +783,8 @@ class _BookingPageState extends State<BookingPage> {
                   decoration: InputDecoration(
                     labelText: "رقم الهاتف",
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   keyboardType: TextInputType.phone,
                   validator: (value) =>

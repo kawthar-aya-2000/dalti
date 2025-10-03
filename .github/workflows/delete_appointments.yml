@@ -2,7 +2,7 @@ name: Delete Old Appointments
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # كل يوم على الساعة 00:00 UTC
+    - cron: '0 23 * * *'  # كل يوم على الساعة 00:00 UTC
   workflow_dispatch:  # لتشغيل يدوي إذا حبيتي
 
 jobs:
@@ -28,4 +28,4 @@ jobs:
           cd functions
           node index.js
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
