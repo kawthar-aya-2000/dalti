@@ -1,7 +1,7 @@
 import 'package:dalti/booking_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart'; 
 
 
@@ -10,11 +10,17 @@ class ClinicDetailPage extends StatelessWidget {
 
   const ClinicDetailPage({super.key, required this.clinicId});
 
-  /*void _callPhone(String phone) async {
+  void _callPhone(String phone) async {
+  // ✅ نصحح الرقم إذا ما فيهش +213
+  if (!phone.startsWith('+213') && phone.startsWith('0')) {
+    phone = '+213${phone.substring(1)}';
+  }
+
   final Uri launchUri = Uri(
     scheme: 'tel',
     path: phone,
   );
+
   if (await canLaunchUrl(launchUri)) {
     await launchUrl(
       launchUri,
@@ -23,13 +29,14 @@ class ClinicDetailPage extends StatelessWidget {
   } else {
     debugPrint("لا يمكن الاتصال بالرقم $phone");
   }
-}*/
-void _copyPhone(String phone, BuildContext context) async {
+}
+
+/*void _copyPhone(String phone, BuildContext context) async {
   await Clipboard.setData(ClipboardData(text: phone));
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text("📋 تم نسخ الرقم: $phone")),
   );
-}
+}*/
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +110,7 @@ void _copyPhone(String phone, BuildContext context) async {
                   const SizedBox(height: 8),
 
                   // رقم الهاتف تفاعلي
-if (data['phone'] != null)
+/*if (data['phone'] != null)
   GestureDetector(
     onTap: () => _copyPhone(data['phone'], context), // 👈 نستعمل الفانكشن لي عندك
     child: Row(
@@ -120,7 +127,26 @@ if (data['phone'] != null)
         ),
       ],
     ),
+  ),*/
+  if (data['phone'] != null)
+  GestureDetector(
+    onTap: () => _callPhone(data['phone']), // ✅ يستعمل الفانكشن لي عندك
+    child: Row(
+      children: [
+        const Icon(Icons.phone, color: Colors.teal),
+        const SizedBox(width: 8),
+        Text(
+          data['phone'],
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.teal,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ],
+    ),
   ),
+
 
                   const SizedBox(height: 16),
 

@@ -1,4 +1,3 @@
-
 // functions/index.js
 const admin = require("firebase-admin");
 
@@ -66,11 +65,12 @@ async function resetClinicQueues() {
   snapshot.forEach((doc) => {
     batch.update(doc.ref, {
       "booking.queue.currentNumber": 0,
+      "booking.queue.totalNumber": 0, // 👈 زدنا تصفير totalNumber
     });
   });
 
   await batch.commit();
-  console.log(`🔄 تم تصفير queue لكل ${snapshot.size} عيادة`);
+  console.log(`🔄 تم تصفير queue (currentNumber + totalNumber) لكل ${snapshot.size} عيادة`);
 }
 
 (async () => {

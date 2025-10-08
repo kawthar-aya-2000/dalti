@@ -191,390 +191,7 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 }*/
-// 2
 
-/*import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-class BookingPage extends StatefulWidget {
-  final String clinicId;
-  final String clinicName;
-  final String doctorName;
-
-  const BookingPage({
-    super.key,
-    required this.clinicId,
-    required this.clinicName,
-    required this.doctorName,
-  });
-
-  @override
-  State<BookingPage> createState() => _BookingPageState();
-}
-
-class _BookingPageState extends State<BookingPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  // المتحكمين في الحقول
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-
-  Future<void> _bookAppointment() async {
-    if (_formKey.currentState!.validate()) {
-      final patientName = _nameController.text.trim();
-      final patientLastName = _lastNameController.text.trim();
-      final patientPhone = _phoneController.text.trim();
-      final patientId = FirebaseAuth.instance.currentUser!.uid;
-
-      // حساب بداية ونهاية اليوم
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
-
-      final appointmentsRef =
-          FirebaseFirestore.instance.collection('appointments');
-
-      // التحقق إذا عندو حجز اليوم
-      final existingAppointments = await appointmentsRef
-          .where('patientId', isEqualTo: patientId)
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
-          .get();
-
-      if (existingAppointments.docs.isNotEmpty) {
-        // عندو حجز
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("تنبيه"),
-            content: const Text("لا يمكنك حجز أكثر من موعد واحد في نفس اليوم."),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("موافق"),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-
-      // إضافة الحجز
-      await appointmentsRef.add({
-        'clinicId': widget.clinicId,
-        'clinicName': widget.clinicName,
-        'doctorName': widget.doctorName,
-        'patientId': patientId,
-        'patientName': patientName,
-        'patientLastName': patientLastName,
-        'patientPhone': patientPhone,
-        'createdAt': Timestamp.fromDate(now), // ⚡ نفس الاسم لي درتيه في index
-        'status': 'pending',
-      });
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("تم الحجز"),
-          content: const Text(
-              "تم حجز الدور بنجاح بانتظار التأكيد من طرف الممرض. قد تتلقى مكالمة هاتفية."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text("موافق"),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl, // الصفحة بالعربية
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("حجز موعد"),
-          backgroundColor: Colors.teal,
-          centerTitle: true,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                // اسم العيادة
-                Text(
-                  widget.clinicName,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-
-                // اسم الطبيب
-                Text(
-                  "الطبيب: ${widget.doctorName}",
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-
-                // خانة الاسم
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: "الاسم",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "أدخل اسمك" : null,
-                ),
-                const SizedBox(height: 16),
-
-                // خانة اللقب
-                TextFormField(
-                  controller: _lastNameController,
-                  decoration: InputDecoration(
-                    labelText: "اللقب",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "أدخل لقبك" : null,
-                ),
-                const SizedBox(height: 16),
-
-                // خانة رقم الهاتف
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: "رقم الهاتف",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "أدخل رقم هاتفك" : null,
-                ),
-                const SizedBox(height: 24),
-
-                // زر الحجز
-                ElevatedButton.icon(
-                  onPressed: _bookAppointment,
-                  icon: const Icon(Icons.check),
-                  label: const Text("تأكيد الحجز"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    minimumSize: const Size.fromHeight(50),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}*/
-//3
-/*import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'booking_confirmation_page.dart';
-
-class BookingPage extends StatefulWidget {
-  final String clinicId;
-  final String clinicName;
-  final String doctorName;
-
-  const BookingPage({
-    super.key,
-    required this.clinicId,
-    required this.clinicName,
-    required this.doctorName,
-  });
-
-  @override
-  State<BookingPage> createState() => _BookingPageState();
-}
-
-class _BookingPageState extends State<BookingPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-
-  Future<void> _bookAppointment() async {
-    if (_formKey.currentState!.validate()) {
-      final patientName = _nameController.text.trim();
-      final patientLastName = _lastNameController.text.trim();
-      final patientPhone = _phoneController.text.trim();
-      final patientId = FirebaseAuth.instance.currentUser!.uid;
-
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
-
-      final appointmentsRef =
-          FirebaseFirestore.instance.collection('appointments');
-
-      // هل عندو حجز اليوم؟
-      final existingAppointments = await appointmentsRef
-          .where('patientId', isEqualTo: patientId)
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
-          .get();
-
-      if (existingAppointments.docs.isNotEmpty) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("تنبيه"),
-            content: const Text("لا يمكنك حجز أكثر من موعد واحد في نفس اليوم."),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("موافق"),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-
-      // حساب رقم الدور (عدد المواعيد اليوم + 1)
-      final todayAppointments = await appointmentsRef
-          .where('clinicId', isEqualTo: widget.clinicId)
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
-          .get();
-
-      final queueNumber = todayAppointments.docs.length + 1;
-
-      // إضافة الحجز
-      await appointmentsRef.add({
-        'clinicId': widget.clinicId,
-        'clinicName': widget.clinicName,
-        'doctorName': widget.doctorName,
-        'patientId': patientId,
-        'patientName': patientName,
-        'patientLastName': patientLastName,
-        'patientPhone': patientPhone,
-        'createdAt': Timestamp.fromDate(now),
-        'status': 'pending',
-        'queueNumber': queueNumber,
-      });
-
-      // الانتقال لصفحة تأكيد الحجز
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BookingConfirmationPage(
-            clinicName: widget.clinicName,
-            doctorName: widget.doctorName,
-            patientName: "$patientName $patientLastName",
-            queueNumber: queueNumber,
-            clinicId: widget.clinicId,
-          ),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("حجز موعد"),
-          backgroundColor: Colors.teal,
-          centerTitle: true,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                Text(widget.clinicName,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text("الطبيب: ${widget.doctorName}",
-                    style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 20),
-
-                // الاسم
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: "الاسم",
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "أدخل اسمك" : null,
-                ),
-                const SizedBox(height: 16),
-
-                // اللقب
-                TextFormField(
-                  controller: _lastNameController,
-                  decoration: InputDecoration(
-                    labelText: "اللقب",
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "أدخل لقبك" : null,
-                ),
-                const SizedBox(height: 16),
-
-                // الهاتف
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: "رقم الهاتف",
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "أدخل رقم هاتفك" : null,
-                ),
-                const SizedBox(height: 24),
-
-                // زر الحجز
-                ElevatedButton.icon(
-                  onPressed: _bookAppointment,
-                  icon: const Icon(Icons.check),
-                  label: const Text("تأكيد الحجز"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    minimumSize: const Size.fromHeight(50),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}*/
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -605,7 +222,7 @@ class _BookingPageState extends State<BookingPage> {
 
   final appointmentsRef = FirebaseFirestore.instance.collection('appointments');
   final clinicsRef = FirebaseFirestore.instance.collection('clinics');
-
+/*
   /// نتأكد أن حقل queue موجود
   Future<void> ensureQueueField() async {
     final clinicRef = clinicsRef.doc(widget.clinicId);
@@ -639,7 +256,49 @@ class _BookingPageState extends State<BookingPage> {
 
       return nextNumber;
     });
+  }*/
+
+    /// نتأكد أن حقل queue موجود
+  Future<void> ensureQueueField() async {
+    final clinicRef = clinicsRef.doc(widget.clinicId);
+    final snapshot = await clinicRef.get();
+
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data();
+    if (data != null &&
+        (data['booking'] == null ||
+            !(data['booking'] as Map).containsKey('queue'))) {
+      await clinicRef.update({
+        'booking.queue': {
+          'currentNumber': 0,
+          'totalNumber': 0, // زدنا الحقل الجديد
+        },
+      });
+    }
   }
+
+  /// نجيب رقم الدور الجديد (totalNumber) باستخدام Transaction
+  Future<int> getNextQueueNumber() async {
+    final clinicRef = clinicsRef.doc(widget.clinicId);
+
+    return FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(clinicRef);
+
+      // totalNumber يزيد كل مرة واحد
+      final totalNumber =
+          (snapshot.data()?['booking']?['queue']?['totalNumber'] as int?) ?? 0;
+      final nextTotalNumber = totalNumber + 1;
+
+      // نكتب التحديث
+      transaction.update(clinicRef, {
+        'booking.queue.totalNumber': nextTotalNumber,
+      });
+
+      return nextTotalNumber; // هذا يرجع رقم الدور للمريض
+    });
+  }
+
 
   Future<void> _bookAppointment() async {
     if (_formKey.currentState!.validate()) {
