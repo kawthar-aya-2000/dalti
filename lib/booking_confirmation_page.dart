@@ -1,137 +1,4 @@
-
-/*
-import 'package:dalti/home_page.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-class BookingConfirmationPage extends StatelessWidget {
-  final String clinicName;
-  final String doctorName;
-  final String patientName;
-  final int queueNumber;
-  final String clinicId;
-
-  const BookingConfirmationPage({
-    super.key,
-    required this.clinicName,
-    required this.doctorName,
-    required this.patientName,
-    required this.queueNumber,
-    required this.clinicId,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false, // 🔒 ما يخليش المستخدم يرجع
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          /*appBar: AppBar(
-            title: const Text("تأكيد الحجز"),
-            backgroundColor: Colors.teal,
-            centerTitle: true,
-            automaticallyImplyLeading: false, // 🔒 يخفي زر الرجوع
-          ),*/
-          appBar: AppBar(
-            title: const Text("تأكيد الحجز"),
-            backgroundColor: Colors.teal,
-            centerTitle: true,
-            automaticallyImplyLeading:
-                false, // نخليها false باش ما يظهرش زر الرجوع الافتراضي
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.home),
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HomePage()),
-                    (route) => false, // نحذف كل الصفحات السابقة من الستاك
-                  );
-                },
-              ),
-            ],
-          ),
-
-          body: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  clinicName,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "الطبيب: $doctorName",
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "المريض: $patientName",
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 30),
-
-                const Text(
-                  "رقم دورك هو:",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: Colors.teal.shade100,
-                  ),
-                  child: Text(
-                    "$queueNumber",
-                    style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // بث مباشر للدور الحالي
-                StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection("clinics")
-                      .doc(clinicId)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const CircularProgressIndicator();
-                    }
-                    final clinicData =
-                        snapshot.data!.data() as Map<String, dynamic>?;
-                    final currentNumber =
-                        clinicData?['booking']?['queue']?['currentNumber'] ?? 0;
-
-                    return Text(
-                      "الدور متوقف الآن عند الرقم: $currentNumber",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}*/
- // الاشعاارت
+// الاشعاارت
 import 'package:dalti/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -165,18 +32,19 @@ class BookingConfirmationPage extends StatefulWidget {
 class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
   bool notified = false; // باش ما يعاودش الإشعار بزاف المرات
 
-  Future<void> _showNotification() async {
+  /*Future<void> _showNotification() async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'queue_channel',
-      'إشعارات الدور',
-      channelDescription: 'إشعار عندما يحين دورك في العيادة',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
+          'queue_channel',
+          'إشعارات الدور',
+          channelDescription: 'إشعار عندما يحين دورك في العيادة',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
 
-    const NotificationDetails details =
-        NotificationDetails(android: androidDetails);
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+    );
 
     await flutterLocalNotificationsPlugin.show(
       0,
@@ -184,6 +52,25 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
       'الطبيب ${widget.doctorName} جاهز لاستقبالك.',
       details,
     );
+  }*/
+  Future<void> _showNotification({
+    required String title,
+    required String body,
+  }) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'queue_channel',
+          'إشعارات الدور',
+          channelDescription: 'إشعار عندما يحين أو يقترب دورك في العيادة',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(0, title, body, details);
   }
 
   @override
@@ -224,11 +111,15 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text("الطبيب: ${widget.doctorName}",
-                    style: const TextStyle(fontSize: 18)),
+                Text(
+                  "الطبيب: ${widget.doctorName}",
+                  style: const TextStyle(fontSize: 18),
+                ),
                 const SizedBox(height: 6),
-                Text("المريض: ${widget.patientName}",
-                    style: const TextStyle(fontSize: 18)),
+                Text(
+                  "المريض: ${widget.patientName}",
+                  style: const TextStyle(fontSize: 18),
+                ),
                 const SizedBox(height: 30),
 
                 const Text(
@@ -273,19 +164,53 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                       notified = true;
                       _showNotification();
                     }*/
-                    if (!notified) {
-  final int current = (currentNumber is int)
-      ? currentNumber
-      : (currentNumber is double)
-          ? currentNumber.toInt()
-          : int.tryParse(currentNumber.toString()) ?? 0;
+                    /*if (!notified) {
+                      final int current = (currentNumber is int)
+                          ? currentNumber
+                          : (currentNumber is double)
+                          ? currentNumber.toInt()
+                          : int.tryParse(currentNumber.toString()) ?? 0;
 
-  if (current == widget.queueNumber) {
-    notified = true;
-    Future.delayed(const Duration(milliseconds: 500), _showNotification);
-  }
-}
+                      if (current == widget.queueNumber) {
+                        notified = true;
+                        Future.delayed(
+                          const Duration(milliseconds: 500),
+                          _showNotification,
+                        );
+                      }
+                    }*/
 
+                    // 🔔 إشعار عند اقتراب الدور بدورين
+                    if (widget.queueNumber > 2 &&
+                        currentNumber == widget.queueNumber - 2 &&
+                        !notified) {
+                      notified = true;
+                      _showNotification(
+                        title: 'قرب دورك!',
+                        body:
+                            'باقي زوج دورات فقط ويجي دورك عند ${widget.doctorName} 🕒',
+                      );
+                    }
+
+                    // 🔔 إشعار خاص باللي أرقامهم صغيرة (1 أو 2)
+                    if (widget.queueNumber <= 2 &&
+                        currentNumber == 0 &&
+                        !notified) {
+                      notified = true;
+                      _showNotification(
+                        title: 'قرب دورك!',
+                        body: 'دورك قريب جدًا عند ${widget.doctorName} ⚡',
+                      );
+                    }
+
+                    // 🔔 إشعار عند وصول الدور الحقيقي
+                    if (currentNumber == widget.queueNumber) {
+                      _showNotification(
+                        title: 'دورك الآن!',
+                        body:
+                            'الطبيب ${widget.doctorName} جاهز لاستقبالك 👨‍⚕️',
+                      );
+                    }
 
                     return Text(
                       "الدور متوقف الآن عند الرقم: $currentNumber",
@@ -294,29 +219,8 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     );
-                    
                   },
-                  
                 ),
-                ElevatedButton(
-  onPressed: () async {
-    await flutterLocalNotificationsPlugin.show(
-      0,
-      'اختبار الإشعارات 🎉',
-      'إذا شفت هذا التنبيه، فالإعدادات كلها تمام ✅',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'test_channel',
-          'Test Notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-      ),
-    );
-  },
-  child: const Text('تجربة إشعار'),
-),
-
               ],
             ),
           ),
@@ -325,4 +229,3 @@ class _BookingConfirmationPageState extends State<BookingConfirmationPage> {
     );
   }
 }
-
